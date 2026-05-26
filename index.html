@@ -2,12 +2,30 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <link rel="stylesheet" href="style.css">
-    <title>SIUAMXD</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIUAMXD | Alight Motion XML Download</title>
+    <style>
+        :root { --accent: #00f3ff; --bg: #050505; --card: #111; }
+        body { margin: 0; background: var(--bg); color: #fff; font-family: 'Segoe UI', sans-serif; }
+        header { padding: 20px 40px; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center; }
+        .container { max-width: 1000px; margin: 40px auto; padding: 0 20px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; }
+        .card { background: var(--card); border: 1px solid #333; border-radius: 12px; padding: 25px; transition: 0.3s; }
+        .card:hover { border-color: var(--accent); transform: translateY(-5px); }
+        h1 { margin: 0; font-size: 1.5rem; letter-spacing: 2px; color: var(--accent); }
+        button { background: #fff; color: #000; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .dl-btn { display: block; margin-top: 20px; padding: 12px; background: var(--accent); color: #000; text-align: center; text-decoration: none; border-radius: 6px; font-weight: bold; }
+        .status { color: #666; font-size: 0.9rem; margin-top: 10px; }
+    </style>
 </head>
 <body>
-    <header id="user-area">Loading...</header>
-    <main class="grid" id="grid"></main>
+    <header>
+        <h1>SIUAMXD</h1>
+        <div id="user-area">読み込み中...</div>
+    </header>
+    <main class="container">
+        <div class="grid" id="grid"></div>
+    </main>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
@@ -27,28 +45,32 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // ログイン状態に応じた画面切り替え
+        window.login = () => signInWithPopup(auth, new GoogleAuthProvider());
+        window.logout = () => signOut(auth);
+
         onAuthStateChanged(auth, async (user) => {
             const userArea = document.getElementById('user-area');
             const grid = document.getElementById('grid');
 
-            // ヘッダー制御
             userArea.innerHTML = user ? 
-                `<span>ようこそ ${user.displayName}</span> <button onclick="window.location.reload()">ログアウト</button>` :
-                `<button onclick="signInWithPopup(auth, new GoogleAuthProvider())">Googleログイン</button>`;
+                `<span>${user.displayName}</span> <button onclick="logout()">ログアウト</button>` :
+                `<button onclick="login()">ログイン</button>`;
 
-            // データ取得
-            const snapshots = await getDocs(collection(db, "presets"));
-            grid.innerHTML = "";
-            snapshots.forEach((doc) => {
-                const d = doc.data();
-                grid.innerHTML += `
-                    <div class="card">
-                        <h3>${d.title}</h3>
-                        <p>${d.desc || ''}</p>
-                        ${user ? `<a href="${d.fileUrl}" class="dl-btn">DOWNLOAD XML</a>` : '<p style="color:#666;">ログインで表示</p>'}
-                    </div>`;
-            });
+            try {
+                const snapshots = await getDocs(collection(db, "presets"));
+                grid.innerHTML = "";
+                snapshots.forEach((doc) => {
+                    const d = doc.data();
+                    grid.innerHTML += `
+                        <div class="card">
+                            <h3>${d.title}</h3>
+                            <p>${d.desc || '説明なし'}</p>
+                            ${user ? `<a href="${d.fileUrl}" class="dl-btn">DOWNLOAD XML</a>` : '<p class="status">ダウンロードにはログインが必要です</p>'}
+                        </div>`;
+                });
+            } catch (e) {
+                grid.innerHTML = "<h3>データベース接続待ち</h3><p>FirebaseでFirestore Databaseを有効にしてください。</p>";
+            }
         });
     </script>
 </body>
