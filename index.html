@@ -2,76 +2,91 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SIUAMXD | Alight Motion XML Download</title>
-    <style>
-        :root { --accent: #00f3ff; --bg: #050505; --card: #111; }
-        body { margin: 0; background: var(--bg); color: #fff; font-family: 'Segoe UI', sans-serif; }
-        header { padding: 20px 40px; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center; }
-        .container { max-width: 1000px; margin: 40px auto; padding: 0 20px; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; }
-        .card { background: var(--card); border: 1px solid #333; border-radius: 12px; padding: 25px; transition: 0.3s; }
-        .card:hover { border-color: var(--accent); transform: translateY(-5px); }
-        h1 { margin: 0; font-size: 1.5rem; letter-spacing: 2px; color: var(--accent); }
-        button { background: #fff; color: #000; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        .dl-btn { display: block; margin-top: 20px; padding: 12px; background: var(--accent); color: #000; text-align: center; text-decoration: none; border-radius: 6px; font-weight: bold; }
-        .status { color: #666; font-size: 0.9rem; margin-top: 10px; }
-    </style>
-</head>
-<body>
-    <header>
-        <h1>SIUAMXD</h1>
-        <div id="user-area">読み込み中...</div>
-    </header>
-    <main class="container">
-        <div class="grid" id="grid"></div>
-    </main>
-
+    <title>SIUAMXD - Complete</title>
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithRedirect, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, doc, updateDoc, arrayUnion, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyADIlXZrVXBp7AqzQcFP9UUveg1Q5TXTcM",
-            authDomain: "siuamxd-login.firebaseapp.com",
-            projectId: "siuamxd-login",
-            storageBucket: "siuamxd-login.firebasestorage.app",
-            messagingSenderId: "682121103941",
-            appId: "1:682121103941:web:b8480d5eb9d8e0cf75712c"
-        };
-
+        const firebaseConfig = { /* お前のAPIキーを入れろ */ };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+        const ADMIN_UID = "QPQAuqakssUodu2WqTYniJUFMBu2";
 
-        window.login = () => signInWithPopup(auth, new GoogleAuthProvider());
-        window.logout = () => signOut(auth);
+        // ログイン
+        window.login = () => signInWithRedirect(auth, new GoogleAuthProvider());
 
-        onAuthStateChanged(auth, async (user) => {
-            const userArea = document.getElementById('user-area');
-            const grid = document.getElementById('grid');
-
-            userArea.innerHTML = user ? 
-                `<span>${user.displayName}</span> <button onclick="logout()">ログアウト</button>` :
-                `<button onclick="login()">ログイン</button>`;
-
-            try {
-                const snapshots = await getDocs(collection(db, "presets"));
-                grid.innerHTML = "";
-                snapshots.forEach((doc) => {
-                    const d = doc.data();
-                    grid.innerHTML += `
-                        <div class="card">
-                            <h3>${d.title}</h3>
-                            <p>${d.desc || '説明なし'}</p>
-                            ${user ? `<a href="${d.fileUrl}" class="dl-btn">DOWNLOAD XML</a>` : '<p class="status">ダウンロードにはログインが必要です</p>'}
-                        </div>`;
-                });
-            } catch (e) {
-                grid.innerHTML = "<h3>データベース接続待ち</h3><p>FirebaseでFirestore Databaseを有効にしてください。</p>";
+        // UI表示制御
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                document.getElementById('auth-btn').innerText = "ログアウト";
+                if (user.uid === ADMIN_UID) document.getElementById('admin-form').style.display = 'block';
             }
         });
+
+        // 投稿機能（管理者のみ）
+        window.submitPreset = async () => {
+            await addDoc(collection(db, "presets"), {
+                title: document.getElementById('title').value,
+                desc: document.getElementById('desc').value,
+                fileUrl: document.getElementById('fileUrl').value,
+                gifUrl: document.getElementById('gifUrl').value,
+                likes: [],
+                createdAt: new Date()
+            });
+            alert("投稿完了");
+        };
+
+        // いいね機能
+        window.toggleLike = async (id, currentLikes) => {
+            if (!auth.currentUser) return alert("ログイン必須");
+            const docRef = doc(db, "presets", id);
+            await updateDoc(docRef, { likes: arrayUnion(auth.currentUser.uid) });
+        };
+
+        // コメント投稿
+        window.postComment = async (presetId) => {
+            if (!auth.currentUser) return alert("ログイン必須");
+            const text = document.getElementById(`comment-${presetId}`).value;
+            await addDoc(collection(db, "presets", presetId, "comments"), {
+                uid: auth.currentUser.uid,
+                text,
+                createdAt: new Date()
+            });
+        };
+
+        // リアルタイム表示（データ取得）
+        onSnapshot(query(collection(db, "presets"), orderBy("createdAt", "desc")), (snap) => {
+            const list = document.getElementById('presets-list');
+            list.innerHTML = "";
+            snap.forEach(doc => {
+                const data = doc.data();
+                list.innerHTML += `
+                    <div style="border:1px solid #ccc; margin:10px; padding:10px;">
+                        <h3>${data.title}</h3>
+                        <img src="${data.gifUrl}" width="200"><br>
+                        <button onclick="download('${data.fileUrl}')">Download XML</button>
+                        <button onclick="toggleLike('${doc.id}')">👍 ${data.likes?.length || 0}</button>
+                        <div>
+                            <input id="comment-${doc.id}" placeholder="コメント...">
+                            <button onclick="postComment('${doc.id}')">送信</button>
+                        </div>
+                    </div>
+                `;
+            });
+        });
+
+        window.download = (url) => { if (auth.currentUser) window.open(url); else alert("ログインしろ"); };
     </script>
+</head>
+<body>
+    <button id="auth-btn" onclick="login()">Googleでログイン</button>
+    <div id="admin-form" style="display:none; background:#eee; padding:15px;">
+        <input id="title" placeholder="タイトル"><input id="desc" placeholder="説明">
+        <input id="fileUrl" placeholder="XML URL"><input id="gifUrl" placeholder="GIF URL">
+        <button onclick="submitPreset()">投稿</button>
+    </div>
+    <div id="presets-list"></div>
 </body>
 </html>
