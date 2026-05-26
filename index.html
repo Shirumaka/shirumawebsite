@@ -8,7 +8,15 @@
         import { getAuth, signInWithRedirect, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, doc, updateDoc, arrayUnion, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        const firebaseConfig = { /* お前のAPIキーを入れろ */ };
+        const firebaseConfig = {
+  apiKey: "AIzaSyADIlXZrVXBp7AqzQcFP9UUveg1Q5TXTcM",
+  authDomain: "siuamxd-login.firebaseapp.com",
+  projectId: "siuamxd-login",
+  storageBucket: "siuamxd-login.firebasestorage.app",
+  messagingSenderId: "682121103941",
+  appId: "1:682121103941:web:b8480d5eb9d8e0cf75712c",
+  measurementId: "G-WX1SQ354YV"
+};
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
