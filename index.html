@@ -1,45 +1,55 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="style.css">
+    <title>SIUAMXD</title>
+</head>
+<body>
+    <header id="user-area">Loading...</header>
+    <main class="grid" id="grid"></main>
 
-const firebaseConfig = {
-  apiKey: "AIzaSyADIlXZrVXBp7AqzQcFP9UUveg1Q5TXTcM",
-  authDomain: "siuamxd-login.firebaseapp.com",
-  projectId: "siuamxd-login",
-  storageBucket: "siuamxd-login.firebasestorage.app",
-  messagingSenderId: "682121103941",
-  appId: "1:682121103941:web:b8480d5eb9d8e0cf75712c"
-};
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+        const firebaseConfig = {
+            apiKey: "AIzaSyADIlXZrVXBp7AqzQcFP9UUveg1Q5TXTcM",
+            authDomain: "siuamxd-login.firebaseapp.com",
+            projectId: "siuamxd-login",
+            storageBucket: "siuamxd-login.firebasestorage.app",
+            messagingSenderId: "682121103941",
+            appId: "1:682121103941:web:b8480d5eb9d8e0cf75712c"
+        };
 
-// ログイン・ログアウトの制御
-window.login = () => signInWithPopup(auth, new GoogleAuthProvider());
-window.logout = () => signOut(auth);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
 
-// ログイン状態監視
-onAuthStateChanged(auth, async (user) => {
-  const content = document.getElementById('content');
-  const snapshots = await getDocs(collection(db, "presets"));
-  
-  let html = `<h1>SIUAMXD</h1>`;
-  if (user) {
-    html += `<p>ようこそ、${user.displayName}さん <button onclick="logout()">ログアウト</button></p>`;
-  } else {
-    html += `<button onclick="login()">Googleでログインしてダウンロード</button>`;
-  }
+        // ログイン状態に応じた画面切り替え
+        onAuthStateChanged(auth, async (user) => {
+            const userArea = document.getElementById('user-area');
+            const grid = document.getElementById('grid');
 
-  html += `<div class="grid">`;
-  snapshots.forEach((doc) => {
-    const data = doc.data();
-    html += `
-      <div class="card">
-        <h3>${data.title}</h3>
-        ${user ? `<a href="${data.fileUrl}" download>DOWNLOAD</a>` : `<p>DLにはログインが必要です</p>`}
-      </div>`;
-  });
-  html += `</div>`;
-  content.innerHTML = html;
-});
+            // ヘッダー制御
+            userArea.innerHTML = user ? 
+                `<span>ようこそ ${user.displayName}</span> <button onclick="window.location.reload()">ログアウト</button>` :
+                `<button onclick="signInWithPopup(auth, new GoogleAuthProvider())">Googleログイン</button>`;
+
+            // データ取得
+            const snapshots = await getDocs(collection(db, "presets"));
+            grid.innerHTML = "";
+            snapshots.forEach((doc) => {
+                const d = doc.data();
+                grid.innerHTML += `
+                    <div class="card">
+                        <h3>${d.title}</h3>
+                        <p>${d.desc || ''}</p>
+                        ${user ? `<a href="${d.fileUrl}" class="dl-btn">DOWNLOAD XML</a>` : '<p style="color:#666;">ログインで表示</p>'}
+                    </div>`;
+            });
+        });
+    </script>
+</body>
+</html>
