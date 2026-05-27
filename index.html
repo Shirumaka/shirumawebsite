@@ -3,124 +3,203 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SIUAMXD - Community</title>
+
+<title>SIUAMXD Community</title>
 
 <style>
-body{
-    font-family:'Segoe UI',sans-serif;
-    background:#0f0f0f;
-    color:#e0e0e0;
+
+*{
     margin:0;
-    padding:20px;
-}
-
-.container{
-    max-width:700px;
-    margin:0 auto;
-}
-
-#admin-form{
-    display:none;
-    background:#1a1a1a;
-    padding:20px;
-    border-radius:16px;
-    margin-bottom:30px;
-    border-left:4px solid #3d5afe;
-}
-
-.card{
-    background:#1a1a1a;
-    padding:20px;
-    margin-bottom:24px;
-    border-radius:16px;
-    box-shadow:0 4px 20px rgba(0,0,0,0.4);
-}
-
-h3{
-    margin-top:0;
-    color:white;
-}
-
-img{
-    width:100%;
-    border-radius:12px;
-    margin:10px 0;
-    object-fit:cover;
-    aspect-ratio:16/9;
-}
-
-input{
-    width:100%;
-    padding:12px;
-    margin:8px 0;
-    background:#2a2a2a;
-    border:1px solid #333;
-    border-radius:8px;
-    color:white;
+    padding:0;
     box-sizing:border-box;
 }
 
-button{
+body{
+    font-family:'Segoe UI',sans-serif;
+    background:#000;
+    color:white;
+    overflow:hidden;
+}
+
+.container{
+    height:100vh;
+    overflow-y:auto;
+    scroll-snap-type:y mandatory;
+}
+
+.card{
+    position:relative;
     width:100%;
-    padding:12px;
+    height:100vh;
+    scroll-snap-align:start;
+    overflow:hidden;
+    background:#111;
+}
+
+.preview{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+}
+
+.overlay{
+    position:absolute;
+    bottom:0;
+    left:0;
+    width:100%;
+    padding:20px;
+    background:linear-gradient(
+        transparent,
+        rgba(0,0,0,0.8)
+    );
+}
+
+.author{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:10px;
+}
+
+.author img{
+    width:45px;
+    height:45px;
+    border-radius:50%;
+}
+
+.title{
+    font-size:24px;
+    font-weight:bold;
+    margin-bottom:10px;
+}
+
+.desc{
+    opacity:0.9;
+    margin-bottom:15px;
+}
+
+.actions{
+    display:flex;
+    gap:10px;
+}
+
+button{
+    border:none;
+    border-radius:10px;
+    padding:12px 16px;
     background:#3d5afe;
     color:white;
-    border:none;
-    border-radius:8px;
     font-weight:bold;
     cursor:pointer;
-    margin-top:10px;
 }
 
 button:hover{
     background:#536dfe;
 }
 
-.like-btn{
-    cursor:pointer;
-    color:#ff4081;
-    display:inline-flex;
-    align-items:center;
-    font-weight:bold;
-    margin-top:10px;
-    font-size:1.1em;
+.topbar{
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    z-index:999;
+    display:flex;
+    justify-content:space-between;
+    padding:15px;
+    background:rgba(0,0,0,0.4);
+    backdrop-filter:blur(10px);
 }
+
+.like{
+    color:#ff4081;
+    font-weight:bold;
+    cursor:pointer;
+}
+
+#uploadPanel{
+    position:fixed;
+    top:70px;
+    right:15px;
+    width:320px;
+    background:#111;
+    padding:15px;
+    border-radius:15px;
+    display:none;
+    z-index:999;
+}
+
+input{
+    width:100%;
+    margin-bottom:10px;
+    padding:10px;
+    border:none;
+    border-radius:10px;
+    background:#222;
+    color:white;
+}
+
 </style>
 </head>
 <body>
 
-<div class="container">
+<div class="topbar">
 
-    <button id="loginBtn">Googleでログイン</button>
+    <button id="loginBtn">
+        Googleログイン
+    </button>
 
-    <div id="admin-form">
+    <button id="logoutBtn" style="display:none;">
+        ログアウト
+    </button>
 
-        <h3>プリセット投稿</h3>
-
-        <input id="title" placeholder="タイトル">
-        <input id="desc" placeholder="説明">
-
-        <input id="gifUrl" placeholder="GIF URL">
-
-        <label>XMLファイル</label>
-        <input type="file" id="xmlFile" accept=".xml">
-
-        <button id="uploadBtn">投稿</button>
-
-    </div>
-
-    <div id="presets-list"></div>
+    <button id="openUploadBtn" style="display:none;">
+        投稿
+    </button>
 
 </div>
 
+<div id="uploadPanel">
+
+    <input
+    type="text"
+    id="title"
+    placeholder="タイトル">
+
+    <input
+    type="text"
+    id="desc"
+    placeholder="説明">
+
+    <input
+    type="text"
+    id="gifUrl"
+    placeholder="GIF URL">
+
+    <input
+    type="text"
+    id="xmlUrl"
+    placeholder="XML URL">
+
+    <button id="uploadBtn">
+        投稿する
+    </button>
+
+</div>
+
+<div class="container" id="feed"></div>
+
 <script type="module">
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import {
+    initializeApp
+}
+from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 
 import {
     getAuth,
-    signInWithPopup,
     GoogleAuthProvider,
+    signInWithPopup,
+    signOut,
     onAuthStateChanged
 }
 from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
@@ -142,25 +221,49 @@ from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 
 const firebaseConfig = {
-    apiKey: "AIzaSyADIlXZrVXBp7AqzQcFP9UUveg1Q5TXTcM",
-    authDomain: "siuamxd-login.firebaseapp.com",
-    projectId: "siuamxd-login",
-    storageBucket: "siuamxd-login.firebasestorage.app",
-    messagingSenderId: "682121103941",
-    appId: "1:682121103941:web:b8480d5eb9d8e0cf75712c"
+
+    apiKey:
+    "AIzaSyADIlXZrVXBp7AqzQcFP9UUveg1Q5TXTcM",
+
+    authDomain:
+    "siuamxd-login.firebaseapp.com",
+
+    projectId:
+    "siuamxd-login",
+
+    storageBucket:
+    "siuamxd-login.firebasestorage.app",
+
+    messagingSenderId:
+    "682121103941",
+
+    appId:
+    "1:682121103941:web:b8480d5eb9d8e0cf75712c"
 };
 
 const app = initializeApp(firebaseConfig);
 
 const auth = getAuth(app);
+
 const db = getFirestore(app);
 
-const ADMIN_UID = "QPQAuqakssUodu2WqTYniJUFMBu2";
+const loginBtn =
+document.getElementById("loginBtn");
 
-const loginBtn = document.getElementById("loginBtn");
-const adminForm = document.getElementById("admin-form");
-const presetsList = document.getElementById("presets-list");
-const uploadBtn = document.getElementById("uploadBtn");
+const logoutBtn =
+document.getElementById("logoutBtn");
+
+const openUploadBtn =
+document.getElementById("openUploadBtn");
+
+const uploadPanel =
+document.getElementById("uploadPanel");
+
+const uploadBtn =
+document.getElementById("uploadBtn");
+
+const feed =
+document.getElementById("feed");
 
 
 // ログイン
@@ -179,6 +282,26 @@ loginBtn.onclick = async () => {
         alert("ログイン失敗");
 
     }
+
+};
+
+
+// ログアウト
+logoutBtn.onclick = async () => {
+
+    await signOut(auth);
+
+};
+
+
+// 投稿パネル
+openUploadBtn.onclick = () => {
+
+    uploadPanel.style.display =
+        uploadPanel.style.display === "block"
+        ? "none"
+        : "block";
+
 };
 
 
@@ -189,16 +312,19 @@ onAuthStateChanged(auth,(user)=>{
 
         loginBtn.style.display = "none";
 
-        if(user.uid === ADMIN_UID){
+        logoutBtn.style.display = "block";
 
-            adminForm.style.display = "block";
-
-        }
+        openUploadBtn.style.display = "block";
 
     }else{
 
         loginBtn.style.display = "block";
-        adminForm.style.display = "none";
+
+        logoutBtn.style.display = "none";
+
+        openUploadBtn.style.display = "none";
+
+        uploadPanel.style.display = "none";
 
     }
 
@@ -208,43 +334,61 @@ onAuthStateChanged(auth,(user)=>{
 // 投稿
 uploadBtn.onclick = async () => {
 
+    if(!auth.currentUser){
+
+        alert("ログインしてください");
+        return;
+
+    }
+
     try{
 
         const title =
-            document.getElementById("title").value;
+        document.getElementById("title").value;
 
         const desc =
-            document.getElementById("desc").value;
+        document.getElementById("desc").value;
 
         const gifUrl =
-            document.getElementById("gifUrl").value;
+        document.getElementById("gifUrl").value;
 
-        const xmlFile =
-            document.getElementById("xmlFile").files[0];
+        const xmlUrl =
+        document.getElementById("xmlUrl").value;
 
-        if(!title || !desc || !gifUrl || !xmlFile){
+        if(
+            !title ||
+            !desc ||
+            !gifUrl ||
+            !xmlUrl
+        ){
 
             alert("全部入力してください");
             return;
 
         }
 
-        // XML文字列化
-        const xmlText = await xmlFile.text();
+        await addDoc(
+            collection(db,"presets"),
+            {
 
-        await addDoc(collection(db,"presets"),{
+                title,
+                desc,
+                gifUrl,
+                xmlUrl,
 
-            title,
-            desc,
-            gifUrl,
+                author:
+                auth.currentUser.displayName,
 
-            xmlContent: xmlText,
+                authorPhoto:
+                auth.currentUser.photoURL,
 
-            likes: [],
+                likes:[],
 
-            createdAt: serverTimestamp()
+                createdAt:
+                serverTimestamp()
 
-        });
+            }
+        );
 
         alert("投稿完了");
 
@@ -258,30 +402,9 @@ uploadBtn.onclick = async () => {
 };
 
 
-// XMLダウンロード
-window.downloadXML = (xmlContent, title) => {
-
-    const blob = new Blob(
-        [xmlContent],
-        { type:"text/xml" }
-    );
-
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-
-    a.href = url;
-    a.download = `${title}.xml`;
-
-    a.click();
-
-    URL.revokeObjectURL(url);
-
-};
-
-
 // いいね
-window.toggleLike = async (id,liked) => {
+window.toggleLike =
+async(id,liked)=>{
 
     if(!auth.currentUser){
 
@@ -290,20 +413,25 @@ window.toggleLike = async (id,liked) => {
 
     }
 
-    const postRef = doc(db,"presets",id);
+    const postRef =
+    doc(db,"presets",id);
 
     await updateDoc(postRef,{
 
         likes: liked
-            ? arrayRemove(auth.currentUser.uid)
-            : arrayUnion(auth.currentUser.uid)
+            ? arrayRemove(
+                auth.currentUser.uid
+            )
+            : arrayUnion(
+                auth.currentUser.uid
+            )
 
     });
 
 };
 
 
-// 一覧表示
+// フィード表示
 const q = query(
     collection(db,"presets"),
     orderBy("createdAt","desc")
@@ -311,42 +439,73 @@ const q = query(
 
 onSnapshot(q,(snapshot)=>{
 
-    presetsList.innerHTML = "";
+    feed.innerHTML = "";
 
     snapshot.forEach((docSnap)=>{
 
         const d = docSnap.data();
 
         const liked =
-            d.likes?.includes(auth.currentUser?.uid);
+        d.likes?.includes(
+            auth.currentUser?.uid
+        );
 
-        presetsList.innerHTML += `
+        feed.innerHTML += `
 
         <div class="card">
 
-            <h3>${d.title}</h3>
+            <img
+            class="preview"
+            src="${d.gifUrl}">
 
-            <img src="${d.gifUrl}">
+            <div class="overlay">
 
-            <p>${d.desc}</p>
+                <div class="author">
 
-            <button
-            onclick='downloadXML(
-                ${JSON.stringify(d.xmlContent)},
-                ${JSON.stringify(d.title)}
-            )'>
-                Download XML
-            </button>
+                    <img
+                    src="${d.authorPhoto}">
 
-            <div
-            class="like-btn"
-            onclick="toggleLike(
-                '${docSnap.id}',
-                ${liked}
-            )">
+                    <span>
+                        ${d.author}
+                    </span>
 
-                ${liked ? "💖" : "❤️"}
-                ${d.likes?.length || 0}
+                </div>
+
+                <div class="title">
+                    ${d.title}
+                </div>
+
+                <div class="desc">
+                    ${d.desc}
+                </div>
+
+                <div class="actions">
+
+                    <a
+                    href="${d.xmlUrl}"
+                    target="_blank">
+
+                        <button>
+                            Download XML
+                        </button>
+
+                    </a>
+
+                    <div
+                    class="like"
+                    onclick="
+                    toggleLike(
+                        '${docSnap.id}',
+                        ${liked}
+                    )">
+
+                        ${liked ? "💖" : "❤️"}
+
+                        ${d.likes?.length || 0}
+
+                    </div>
+
+                </div>
 
             </div>
 
