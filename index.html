@@ -17,10 +17,10 @@
         
         /* ボタン・入力 */
         input { width: 100%; padding: 12px; margin: 8px 0; background: #2a2a2a; border: 1px solid #333; border-radius: 8px; color: white; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: #3d5afe; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        button { width: 100%; padding: 12px; background: #3d5afe; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: background 0.2s; }
         button:hover { background: #536dfe; }
         
-        .like-btn { cursor: pointer; color: #ff4081; display: inline-flex; align-items: center; font-weight: bold; margin-top: 10px; }
+        .like-btn { cursor: pointer; color: #ff4081; display: inline-flex; align-items: center; font-weight: bold; margin-top: 10px; font-size: 1.1em; }
     </style>
 </head>
 <body>
@@ -39,7 +39,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, signInWithRedirect, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getAuth, signInWithRedirect, GoogleAuthProvider, onAuthStateChanged, getRedirectResult } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
@@ -60,9 +60,20 @@
 
         window.login = () => signInWithRedirect(auth, new GoogleAuthProvider());
 
+        // ログイン状態の変化を監視
         onAuthStateChanged(auth, (user) => {
-            if (user?.uid === ADMIN_UID) document.getElementById('admin-form').style.display = 'block';
+            const authBtn = document.getElementById('auth-btn');
+            if (user) {
+                authBtn.style.display = 'none';
+                if (user.uid === ADMIN_UID) document.getElementById('admin-form').style.display = 'block';
+            } else {
+                authBtn.style.display = 'block';
+                document.getElementById('admin-form').style.display = 'none';
+            }
         });
+
+        // ページ読み込み時にリダイレクトの結果を確認
+        getRedirectResult(auth).catch(console.error);
 
         window.uploadAndPost = async () => {
             const xmlFile = document.getElementById('xmlFile').files[0];
