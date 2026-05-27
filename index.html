@@ -1,122 +1,361 @@
+# 修正版コード
+
+```html
 <!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SIUAMXD - Community</title>
+
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #0f0f0f; color: #e0e0e0; margin: 0; padding: 20px; }
-        .container { max-width: 600px; margin: 0 auto; }
-        
-        /* 管理画面 */
-        #admin-form { display: none; background: #1a1a1a; padding: 20px; border-radius: 16px; margin-bottom: 30px; border-left: 4px solid #3d5afe; }
-        
-        /* カードデザイン */
-        .card { background: #1a1a1a; padding: 20px; margin-bottom: 24px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
-        h3 { margin-top: 0; color: #fff; }
-        img { width: 100%; border-radius: 12px; margin: 10px 0; object-fit: cover; aspect-ratio: 16/9; }
-        
-        /* ボタン・入力 */
-        input { width: 100%; padding: 12px; margin: 8px 0; background: #2a2a2a; border: 1px solid #333; border-radius: 8px; color: white; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: #3d5afe; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: background 0.2s; }
-        button:hover { background: #536dfe; }
-        
-        .like-btn { cursor: pointer; color: #ff4081; display: inline-flex; align-items: center; font-weight: bold; margin-top: 10px; font-size: 1.1em; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #0f0f0f;
+            color: #e0e0e0;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        #admin-form {
+            display: none;
+            background: #1a1a1a;
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 30px;
+            border-left: 4px solid #3d5afe;
+        }
+
+        .card {
+            background: #1a1a1a;
+            padding: 20px;
+            margin-bottom: 24px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+        }
+
+        h3 {
+            margin-top: 0;
+            color: white;
+        }
+
+        img {
+            width: 100%;
+            border-radius: 12px;
+            margin: 10px 0;
+            object-fit: cover;
+            aspect-ratio: 16/9;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            background: #2a2a2a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            color: white;
+            box-sizing: border-box;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #3d5afe;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background: #536dfe;
+        }
+
+        .like-btn {
+            cursor: pointer;
+            color: #ff4081;
+            display: inline-flex;
+            align-items: center;
+            font-weight: bold;
+            margin-top: 10px;
+            font-size: 1.1em;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <button onclick="login()" id="auth-btn">Googleでログイン</button>
-        <div id="admin-form">
-            <h3>管理者用：プリセット投稿</h3>
-            <input id="title" placeholder="タイトル">
-            <input id="desc" placeholder="説明文">
-            <label>XML: <input type="file" id="xmlFile"></label>
-            <label>GIF: <input type="file" id="gifFile"></label>
-            <button onclick="uploadAndPost()">投稿実行</button>
-        </div>
-        <div id="presets-list"></div>
+
+<div class="container">
+
+    <button id="auth-btn">Googleでログイン</button>
+
+    <div id="admin-form">
+        <h3>管理者用：プリセット投稿</h3>
+
+        <input id="title" placeholder="タイトル">
+        <input id="desc" placeholder="説明文">
+
+        <label>
+            XML:
+            <input type="file" id="xmlFile" accept=".xml">
+        </label>
+
+        <label>
+            GIF:
+            <input type="file" id="gifFile" accept="image/gif">
+        </label>
+
+        <button id="upload-btn">投稿実行</button>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, signInWithRedirect, GoogleAuthProvider, onAuthStateChanged, getRedirectResult } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+    <div id="presets-list"></div>
 
-        const firebaseConfig = { 
-            apiKey: "AIzaSyADIlXZrVXBp7AqzQcFP9UUveg1Q5TXTcM",
-            authDomain: "siuamxd-login.firebaseapp.com",
-            projectId: "siuamxd-login",
-            storageBucket: "siuamxd-login.firebasestorage.app",
-            messagingSenderId: "682121103941",
-            appId: "1:682121103941:web:b8480d5eb9d8e0cf75712c"
-        };
+</div>
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const storage = getStorage(app);
-        const ADMIN_UID = "QPQAuqakssUodu2WqTYniJUFMBu2";
+<script type="module">
 
-        window.login = () => signInWithRedirect(auth, new GoogleAuthProvider());
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 
-        // ログイン状態の変化を監視
-        onAuthStateChanged(auth, (user) => {
-            const authBtn = document.getElementById('auth-btn');
-            if (user) {
-                authBtn.style.display = 'none';
-                if (user.uid === ADMIN_UID) document.getElementById('admin-form').style.display = 'block';
-            } else {
-                authBtn.style.display = 'block';
-                document.getElementById('admin-form').style.display = 'none';
-            }
+import {
+    getAuth,
+    signInWithPopup,
+    GoogleAuthProvider,
+    onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+import {
+    getFirestore,
+    collection,
+    addDoc,
+    onSnapshot,
+    query,
+    orderBy,
+    doc,
+    updateDoc,
+    arrayUnion,
+    arrayRemove,
+    serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+import {
+    getStorage,
+    ref,
+    uploadBytes,
+    getDownloadURL
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyADIlXZrVXBp7AqzQcFP9UUveg1Q5TXTcM",
+    authDomain: "siuamxd-login.firebaseapp.com",
+    projectId: "siuamxd-login",
+    storageBucket: "siuamxd-login.firebasestorage.app",
+    messagingSenderId: "682121103941",
+    appId: "1:682121103941:web:b8480d5eb9d8e0cf75712c"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
+
+const ADMIN_UID = "QPQAuqakssUodu2WqTYniJUFMBu2";
+
+const authBtn = document.getElementById("auth-btn");
+const adminForm = document.getElementById("admin-form");
+const presetsList = document.getElementById("presets-list");
+const uploadBtn = document.getElementById("upload-btn");
+
+
+// ログイン
+authBtn.addEventListener("click", async () => {
+    try {
+        await signInWithPopup(auth, new GoogleAuthProvider());
+    } catch (e) {
+        console.error(e);
+        alert("ログイン失敗");
+    }
+});
+
+
+// ログイン状態
+onAuthStateChanged(auth, (user) => {
+
+    if (user) {
+        authBtn.style.display = "none";
+
+        if (user.uid === ADMIN_UID) {
+            adminForm.style.display = "block";
+        }
+
+    } else {
+        authBtn.style.display = "block";
+        adminForm.style.display = "none";
+    }
+});
+
+
+// 投稿
+uploadBtn.addEventListener("click", async () => {
+
+    try {
+
+        const title = document.getElementById("title").value;
+        const desc = document.getElementById("desc").value;
+
+        const xmlFile = document.getElementById("xmlFile").files[0];
+        const gifFile = document.getElementById("gifFile").files[0];
+
+        if (!title || !desc || !xmlFile || !gifFile) {
+            alert("全部入力してください");
+            return;
+        }
+
+        const xmlRef = ref(storage, `presets/${Date.now()}.xml`);
+        const gifRef = ref(storage, `gifs/${Date.now()}.gif`);
+
+        await uploadBytes(xmlRef, xmlFile);
+        await uploadBytes(gifRef, gifFile);
+
+        const xmlUrl = await getDownloadURL(xmlRef);
+        const gifUrl = await getDownloadURL(gifRef);
+
+        await addDoc(collection(db, "presets"), {
+            title,
+            desc,
+            fileUrl: xmlUrl,
+            gifUrl,
+            likes: [],
+            createdAt: serverTimestamp()
         });
 
-        // ページ読み込み時にリダイレクトの結果を確認
-        getRedirectResult(auth).catch(console.error);
+        alert("投稿完了");
 
-        window.uploadAndPost = async () => {
-            const xmlFile = document.getElementById('xmlFile').files[0];
-            const gifFile = document.getElementById('gifFile').files[0];
-            if (!xmlFile || !gifFile) return alert("ファイルを選択してください");
-            
-            const xmlRef = ref(storage, 'presets/' + Date.now());
-            const gifRef = ref(storage, 'gifs/' + Date.now());
-            
-            await uploadBytes(xmlRef, xmlFile);
-            await uploadBytes(gifRef, gifFile);
-            
-            await addDoc(collection(db, "presets"), {
-                title: document.getElementById('title').value,
-                desc: document.getElementById('desc').value,
-                fileUrl: await getDownloadURL(xmlRef),
-                gifUrl: await getDownloadURL(gifRef),
-                likes: [],
-                createdAt: new Date()
-            });
-            alert("投稿完了");
-        };
+    } catch (e) {
+        console.error(e);
+        alert("投稿失敗");
+    }
+});
 
-        window.toggleLike = async (id) => {
-            if (!auth.currentUser) return alert("ログインしてください");
-            await updateDoc(doc(db, "presets", id), { likes: arrayUnion(auth.currentUser.uid) });
-        };
 
-        onSnapshot(query(collection(db, "presets"), orderBy("createdAt", "desc")), (snap) => {
-            const list = document.getElementById('presets-list');
-            list.innerHTML = "";
-            snap.forEach(doc => {
-                const d = doc.data();
-                list.innerHTML += `
-                    <div class="card">
-                        <h3>${d.title}</h3>
-                        <img src="${d.gifUrl}">
-                        <p>${d.desc}</p>
-                        <button onclick="window.open('${d.fileUrl}')">Download XML</button>
-                        <div class="like-btn" onclick="toggleLike('${doc.id}')">❤️ ${d.likes?.length || 0}</div>
-                    </div>`;
-            });
-        });
-    </script>
+// いいね
+window.toggleLike = async (id, liked) => {
+
+    if (!auth.currentUser) {
+        alert("ログインしてください");
+        return;
+    }
+
+    const postRef = doc(db, "presets", id);
+
+    await updateDoc(postRef, {
+        likes: liked
+            ? arrayRemove(auth.currentUser.uid)
+            : arrayUnion(auth.currentUser.uid)
+    });
+};
+
+
+// リアルタイム表示
+const q = query(
+    collection(db, "presets"),
+    orderBy("createdAt", "desc")
+);
+
+onSnapshot(q, (snapshot) => {
+
+    presetsList.innerHTML = "";
+
+    snapshot.forEach((docSnap) => {
+
+        const d = docSnap.data();
+
+        const liked = d.likes?.includes(auth.currentUser?.uid);
+
+        presetsList.innerHTML += `
+            <div class="card">
+                <h3>${d.title}</h3>
+
+                <img src="${d.gifUrl}">
+
+                <p>${d.desc}</p>
+
+                <button onclick="window.open('${d.fileUrl}', '_blank')">
+                    Download XML
+                </button>
+
+                <div
+                    class="like-btn"
+                    onclick="toggleLike('${docSnap.id}', ${liked})"
+                >
+                    ${liked ? '💖' : '❤️'} ${d.likes?.length || 0}
+                </div>
+            </div>
+        `;
+    });
+});
+
+</script>
+
 </body>
 </html>
+```
+
+# 多分動かなかった原因
+
+* `signInWithRedirect()` がブラウザによって失敗してた
+* Firestore の `createdAt` が `new Date()` だった
+* Firebase Authentication の Google ログインが有効化されてない
+* Firestore Database が未作成
+* Storage のルール不足
+* Console にエラーが出ていた
+
+# Firebase側で必要な設定
+
+## Authentication
+
+GoogleログインをONにする。
+
+## Firestore Database
+
+作成する。
+
+## Storage
+
+有効化する。
+
+## Firestore Rules
+
+```js
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /presets/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+  }
+}
+```
+
+## Storage Rules
+
+```js
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    match /{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+  }
+}
+```
