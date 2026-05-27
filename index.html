@@ -1,123 +1,364 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <title>SIUAMXD - Community</title>
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f0f0f; color: #e0e0e0; margin: 0; padding: 20px; }
-        .container { max-width: 600px; margin: 0 auto; }
-        
-        #admin-form { display: none; background: #1a1a1a; padding: 20px; border-radius: 16px; margin-bottom: 30px; border-left: 4px solid #3d5afe; }
-        .card { background: #1a1a1a; padding: 20px; margin-bottom: 24px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
-        h3 { margin-top: 0; color: #fff; }
-        img { width: 100%; border-radius: 12px; margin: 10px 0; object-fit: cover; aspect-ratio: 16/9; }
-        
-        input { width: 100%; padding: 12px; margin: 8px 0; background: #2a2a2a; border: 1px solid #333; border-radius: 8px; color: white; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: #3d5afe; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        button:hover { background: #536dfe; }
-        
-        .like-btn { cursor: pointer; color: #ff4081; display: inline-flex; align-items: center; font-weight: bold; margin-top: 10px; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIUAMXD - Community</title>
+
+<style>
+body{
+    font-family:'Segoe UI',sans-serif;
+    background:#0f0f0f;
+    color:#e0e0e0;
+    margin:0;
+    padding:20px;
+}
+
+.container{
+    max-width:700px;
+    margin:0 auto;
+}
+
+#admin-form{
+    display:none;
+    background:#1a1a1a;
+    padding:20px;
+    border-radius:16px;
+    margin-bottom:30px;
+    border-left:4px solid #3d5afe;
+}
+
+.card{
+    background:#1a1a1a;
+    padding:20px;
+    margin-bottom:24px;
+    border-radius:16px;
+    box-shadow:0 4px 20px rgba(0,0,0,0.4);
+}
+
+h3{
+    margin-top:0;
+    color:white;
+}
+
+img{
+    width:100%;
+    border-radius:12px;
+    margin:10px 0;
+    object-fit:cover;
+    aspect-ratio:16/9;
+}
+
+input{
+    width:100%;
+    padding:12px;
+    margin:8px 0;
+    background:#2a2a2a;
+    border:1px solid #333;
+    border-radius:8px;
+    color:white;
+    box-sizing:border-box;
+}
+
+button{
+    width:100%;
+    padding:12px;
+    background:#3d5afe;
+    color:white;
+    border:none;
+    border-radius:8px;
+    font-weight:bold;
+    cursor:pointer;
+    margin-top:10px;
+}
+
+button:hover{
+    background:#536dfe;
+}
+
+.like-btn{
+    cursor:pointer;
+    color:#ff4081;
+    display:inline-flex;
+    align-items:center;
+    font-weight:bold;
+    margin-top:10px;
+    font-size:1.1em;
+}
+</style>
 </head>
 <body>
-    <div class="container">
-        <button onclick="login()" id="auth-btn">Googleでログイン</button>
-        <div id="admin-form">
-            <h3>管理者用：プリセット投稿</h3>
-            <input id="title" placeholder="タイトル">
-            <input id="desc" placeholder="説明文">
-            <label>XML: <input type="file" id="xmlFile"></label>
-            <label>GIF: <input type="file" id="gifFile"></label>
-            <button id="post-btn" onclick="uploadAndPost()">投稿実行</button>
-        </div>
-        <div id="presets-list"></div>
+
+<div class="container">
+
+    <button id="loginBtn">Googleでログイン</button>
+
+    <div id="admin-form">
+
+        <h3>プリセット投稿</h3>
+
+        <input id="title" placeholder="タイトル">
+        <input id="desc" placeholder="説明">
+
+        <input id="gifUrl" placeholder="GIF URL">
+
+        <label>XMLファイル</label>
+        <input type="file" id="xmlFile" accept=".xml">
+
+        <button id="uploadBtn">投稿</button>
+
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, signInWithRedirect, GoogleAuthProvider, onAuthStateChanged, getRedirectResult } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, arrayUnion, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+    <div id="presets-list"></div>
 
-        const firebaseConfig = { 
-            apiKey: "AIzaSyADIlXZrVXBp7AqzQcFP9UUveg1Q5TXTcM",
-            authDomain: "siuamxd-login.firebaseapp.com",
-            projectId: "siuamxd-login",
-            storageBucket: "siuamxd-login.firebasestorage.app",
-            messagingSenderId: "682121103941",
-            appId: "1:682121103941:web:b8480d5eb9d8e0cf75712c"
-        };
+</div>
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const storage = getStorage(app);
-        const ADMIN_UID = "QPQAuqakssUodu2WqTYniJUFMBu2";
+<script type="module">
 
-        window.login = () => signInWithRedirect(auth, new GoogleAuthProvider());
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 
-        onAuthStateChanged(auth, (user) => {
-            const btn = document.getElementById('auth-btn');
-            if (user) {
-                btn.style.display = 'none';
-                if (user.uid === ADMIN_UID) document.getElementById('admin-form').style.display = 'block';
-            }
+import {
+    getAuth,
+    signInWithPopup,
+    GoogleAuthProvider,
+    onAuthStateChanged
+}
+from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+import {
+    getFirestore,
+    collection,
+    addDoc,
+    onSnapshot,
+    query,
+    orderBy,
+    serverTimestamp,
+    updateDoc,
+    doc,
+    arrayUnion,
+    arrayRemove
+}
+from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+
+const firebaseConfig = {
+    apiKey: "AIzaSyADIlXZrVXBp7AqzQcFP9UUveg1Q5TXTcM",
+    authDomain: "siuamxd-login.firebaseapp.com",
+    projectId: "siuamxd-login",
+    storageBucket: "siuamxd-login.firebasestorage.app",
+    messagingSenderId: "682121103941",
+    appId: "1:682121103941:web:b8480d5eb9d8e0cf75712c"
+};
+
+const app = initializeApp(firebaseConfig);
+
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const ADMIN_UID = "QPQAuqakssUodu2WqTYniJUFMBu2";
+
+const loginBtn = document.getElementById("loginBtn");
+const adminForm = document.getElementById("admin-form");
+const presetsList = document.getElementById("presets-list");
+const uploadBtn = document.getElementById("uploadBtn");
+
+
+// ログイン
+loginBtn.onclick = async () => {
+
+    try{
+
+        await signInWithPopup(
+            auth,
+            new GoogleAuthProvider()
+        );
+
+    }catch(err){
+
+        console.error(err);
+        alert("ログイン失敗");
+
+    }
+};
+
+
+// ログイン状態
+onAuthStateChanged(auth,(user)=>{
+
+    if(user){
+
+        loginBtn.style.display = "none";
+
+        if(user.uid === ADMIN_UID){
+
+            adminForm.style.display = "block";
+
+        }
+
+    }else{
+
+        loginBtn.style.display = "block";
+        adminForm.style.display = "none";
+
+    }
+
+});
+
+
+// 投稿
+uploadBtn.onclick = async () => {
+
+    try{
+
+        const title =
+            document.getElementById("title").value;
+
+        const desc =
+            document.getElementById("desc").value;
+
+        const gifUrl =
+            document.getElementById("gifUrl").value;
+
+        const xmlFile =
+            document.getElementById("xmlFile").files[0];
+
+        if(!title || !desc || !gifUrl || !xmlFile){
+
+            alert("全部入力してください");
+            return;
+
+        }
+
+        // XML文字列化
+        const xmlText = await xmlFile.text();
+
+        await addDoc(collection(db,"presets"),{
+
+            title,
+            desc,
+            gifUrl,
+
+            xmlContent: xmlText,
+
+            likes: [],
+
+            createdAt: serverTimestamp()
+
         });
 
-        getRedirectResult(auth).catch(e => console.error(e));
+        alert("投稿完了");
 
-        window.uploadAndPost = async () => {
-            const btn = document.getElementById('post-btn');
-            const xmlFile = document.getElementById('xmlFile').files[0];
-            const gifFile = document.getElementById('gifFile').files[0];
-            
-            if (!xmlFile || !gifFile) return alert("ファイルを選択してください");
-            btn.innerText = "投稿中...";
-            
-            try {
-                const xmlRef = ref(storage, 'presets/' + Date.now());
-                const gifRef = ref(storage, 'gifs/' + Date.now());
-                await uploadBytes(xmlRef, xmlFile);
-                await uploadBytes(gifRef, gifFile);
-                
-                await addDoc(collection(db, "presets"), {
-                    title: document.getElementById('title').value,
-                    desc: document.getElementById('desc').value,
-                    fileUrl: await getDownloadURL(xmlRef),
-                    gifUrl: await getDownloadURL(gifRef),
-                    likes: [],
-                    createdAt: serverTimestamp()
-                });
-                alert("投稿成功！");
-                btn.innerText = "投稿実行";
-            } catch (e) {
-                console.error(e);
-                alert("エラーが発生しました: " + e.message);
-                btn.innerText = "投稿実行";
-            }
-        };
+    }catch(err){
 
-        window.toggleLike = async (id) => {
-            if (!auth.currentUser) return alert("ログインしてください");
-            await updateDoc(doc(db, "presets", id), { likes: arrayUnion(auth.currentUser.uid) });
-        };
+        console.error(err);
+        alert("投稿失敗");
 
-        // リアルタイム監視
-        onSnapshot(query(collection(db, "presets"), orderBy("createdAt", "desc")), (snap) => {
-            const list = document.getElementById('presets-list');
-            list.innerHTML = "";
-            snap.forEach(doc => {
-                const d = doc.data();
-                list.innerHTML += `
-                    <div class="card">
-                        <h3>${d.title}</h3>
-                        <img src="${d.gifUrl}">
-                        <p>${d.desc}</p>
-                        <button onclick="window.open('${d.fileUrl}')">Download XML</button>
-                        <div class="like-btn" onclick="toggleLike('${doc.id}')">❤️ ${d.likes?.length || 0}</div>
-                    </div>`;
-            });
-        });
-    </script>
+    }
+
+};
+
+
+// XMLダウンロード
+window.downloadXML = (xmlContent, title) => {
+
+    const blob = new Blob(
+        [xmlContent],
+        { type:"text/xml" }
+    );
+
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+
+    a.href = url;
+    a.download = `${title}.xml`;
+
+    a.click();
+
+    URL.revokeObjectURL(url);
+
+};
+
+
+// いいね
+window.toggleLike = async (id,liked) => {
+
+    if(!auth.currentUser){
+
+        alert("ログインしてください");
+        return;
+
+    }
+
+    const postRef = doc(db,"presets",id);
+
+    await updateDoc(postRef,{
+
+        likes: liked
+            ? arrayRemove(auth.currentUser.uid)
+            : arrayUnion(auth.currentUser.uid)
+
+    });
+
+};
+
+
+// 一覧表示
+const q = query(
+    collection(db,"presets"),
+    orderBy("createdAt","desc")
+);
+
+onSnapshot(q,(snapshot)=>{
+
+    presetsList.innerHTML = "";
+
+    snapshot.forEach((docSnap)=>{
+
+        const d = docSnap.data();
+
+        const liked =
+            d.likes?.includes(auth.currentUser?.uid);
+
+        presetsList.innerHTML += `
+
+        <div class="card">
+
+            <h3>${d.title}</h3>
+
+            <img src="${d.gifUrl}">
+
+            <p>${d.desc}</p>
+
+            <button
+            onclick='downloadXML(
+                ${JSON.stringify(d.xmlContent)},
+                ${JSON.stringify(d.title)}
+            )'>
+                Download XML
+            </button>
+
+            <div
+            class="like-btn"
+            onclick="toggleLike(
+                '${docSnap.id}',
+                ${liked}
+            )">
+
+                ${liked ? "💖" : "❤️"}
+                ${d.likes?.length || 0}
+
+            </div>
+
+        </div>
+
+        `;
+
+    });
+
+});
+
+</script>
+
 </body>
 </html>
